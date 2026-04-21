@@ -104,7 +104,7 @@
         [
             { value: 'all', text: '完整對話 (Q&A)' },
             { value: 'q',   text: '僅提問 (User)' },
-            { value: 'a',   text: '僅回答 (Gemini)' },
+            { value: 'a',   text: '僅回答 (AI)' },
         ].forEach(optData => {
             const opt = document.createElement('option');
             opt.value = optData.value;

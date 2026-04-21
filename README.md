@@ -5,8 +5,8 @@
 
 | 指令碼 | 對應網站 | 功能 |
 | --- | --- | --- |
-| `scripts/claude.ai.js` | https://claude.ai/ | 下載對話為 `.md` 檔 / 複製到剪貼簿 |
-| `scripts/gemini.js` | https://gemini.google.com/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
+| [`scripts/claude.ai.js`](scripts/claude.ai.js) | https://claude.ai/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
+| [`scripts/gemini.js`](scripts/gemini.js) | https://gemini.google.com/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
 
 兩個指令碼均會在頁面右下角注入一個浮動面板，提供「下載」與「複製」按鈕。
 
@@ -47,4 +47,4 @@
   - **下載**：將對話存成 Markdown 檔案 (檔名格式 `[source][YYYYMMDD]title.md`)
   - **複製**：將 Markdown 內容複製到剪貼簿
 
- Gemini 面板額外提供下拉選單，可選擇匯出範圍：完整對話 / 僅提問 / 僅回答。
+ 面板上的下拉選單可選擇輸出範圍：完整對話 (Q&A) / 僅提問 (User) / 僅回答 (AI)。

@@ -64,6 +64,7 @@
   }
 
   function buildMarkdown() {
+    const mode = document.getElementById('export-type').value;
     const allTurns = [...document.querySelectorAll(
       '[data-testid="user-message"], .font-claude-response'
     )];
@@ -80,12 +81,18 @@
 
     turns.forEach(turn => {
       const isUser = turn.dataset.testid === 'user-message';
-      const role = isUser ? '**You**' : '**Claude**';
       const contentEl = isUser
         ? (turn.querySelector('.whitespace-pre-wrap') || turn)
         : getAiContent(turn);
       const text = htmlToMd(contentEl).trim();
-      if (text) md += role + '\n\n' + text + '\n\n---\n\n';
+      if (!text) return;
+      if (mode === 'all') {
+        md += (isUser ? '## 🙋 User\n' : '## 🤖 Claude\n') + text + '\n\n---\n\n';
+      } else if (mode === 'q' && isUser) {
+        md += `> ${text}\n\n`;
+      } else if (mode === 'a' && !isUser) {
+        md += `${text}\n\n---\n\n`;
+      }
     });
 
     const now = new Date();
@@ -149,11 +156,27 @@
       display: flex; flex-direction: column; gap: 8px; font-family: sans-serif;
     `;
 
+    const select = document.createElement('select');
+    select.id = 'export-type';
+    select.style.cssText = 'background: #1e1f20; color: white; border: 1px solid #5f6368; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 13px;';
+
+    [
+      { value: 'all', text: '完整對話 (Q&A)' },
+      { value: 'q',   text: '僅提問 (User)' },
+      { value: 'a',   text: '僅回答 (AI)' },
+    ].forEach(optData => {
+      const opt = document.createElement('option');
+      opt.value = optData.value;
+      opt.textContent = optData.text;
+      select.appendChild(opt);
+    });
+
     const btnGroup = document.createElement('div');
     btnGroup.style.cssText = 'display: flex; gap: 8px;';
     btnGroup.appendChild(createButton('下載', true, handleDownload));
     btnGroup.appendChild(createButton('複製', false, handleCopy));
 
+    container.appendChild(select);
     container.appendChild(btnGroup);
     document.body.appendChild(container);
   }
