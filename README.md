@@ -5,8 +5,8 @@
 
 | 指令碼 | 對應網站 | 功能 |
 | --- | --- | --- |
-| [`scripts/claude.ai.user.js`](scripts/claude.ai.js) | claude.ai/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
-| [`scripts/gemini.user.js`](scripts/gemini.js) | gemini.google.com/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
+| [`scripts/claude.ai.user.js`](scripts/claude.ai.user.js) | claude.ai/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
+| [`scripts/gemini.user.js`](scripts/gemini.user.js) | gemini.google.com/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
 
 兩個指令碼均會在頁面右下角注入一個浮動面板，提供「下載」與「複製」按鈕。
 
