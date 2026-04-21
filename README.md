@@ -3,15 +3,14 @@
 此專案為 Tampermonkey 使用者指令碼 (UserScript) 集合，用於將 AI 對話頁面的內容匯出為 Markdown。
 支援的平台：
 
-| 指令碼 | 對應網站 | 功能 |
-| --- | --- | --- |
-| [`scripts/claude.ai.user.js`](scripts/claude.ai.user.js) | claude.ai/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
-| [`scripts/gemini.user.js`](scripts/gemini.user.js) | gemini.google.com/ | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
+| 指令碼 | 對應網站 | 快速安裝 | 功能 |
+| --- | --- | --- | --- |
+| [`scripts/claude.ai.user.js`](scripts/claude.ai.user.js) | claude.ai/ | [點擊安裝](https://github.com/DabitApp/tampermonkey-script/raw/refs/heads/main/scripts/claude.ai.user.js) | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
+| [`scripts/gemini.user.js`](scripts/gemini.user.js) | gemini.google.com/ | [點擊安裝](https://github.com/DabitApp/tampermonkey-script/raw/refs/heads/main/scripts/gemini.user.js) | 下載完整對話或僅問 / 僅答為 `.md` 檔 / 複製到剪貼簿 |
 
 兩個指令碼均會在頁面右下角注入一個浮動面板，提供「下載」與「複製」按鈕。
 
-
-## 安裝方式
+## 完整安裝方式
 
 ### 1. 安裝 Tampermonkey 瀏覽器擴充功能
 
@@ -32,17 +31,7 @@
  其他瀏覽器:
   TBD
 
-
 ### 3. 安裝本專案的指令碼
-
- **快速安裝（點擊即裝）**
-
- 確認已完成上述步驟後，直接點擊以下連結，Tampermonkey 將自動彈出安裝確認頁：
-
- | 指令碼 | 快速安裝 |
- | --- | --- |
- | claude.ai.user.js | [點擊安裝](https://github.com/DabitApp/tampermonkey-script/raw/refs/heads/main/scripts/claude.ai.user.js) |
- | gemini.user.js | [點擊安裝](https://github.com/DabitApp/tampermonkey-script/raw/refs/heads/main/scripts/gemini.user.js) |
 
  **手動安裝**
 
