@@ -4,6 +4,8 @@
 // @version      2.1
 // @description  下載 Claude.ai 對話為 Markdown（下載 / 複製）
 // @match        https://claude.ai/*
+// @updateURL https://github.com/DabitApp/tampermonkey-script/blob/main/scripts/claude.ai.user.js
+// @downloadURL https://github.com/DabitApp/tampermonkey-script/blob/main/scripts/claude.ai.user.js
 // @grant        none
 // ==/UserScript==
 

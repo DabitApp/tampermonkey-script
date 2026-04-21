@@ -5,6 +5,8 @@
 // @description  下載 Gemini 對話為 Markdown（下載 / 複製），支援 [gemini][date]title 檔名格式
 // @author       Gemini User
 // @match        https://gemini.google.com/*
+// @updateURL https://github.com/DabitApp/tampermonkey-script/blob/main/scripts/gemini.user.js
+// @downloadURL https://github.com/DabitApp/tampermonkey-script/blob/main/scripts/gemini.user.js
 // @grant        none
 // ==/UserScript==
 
