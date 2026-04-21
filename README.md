@@ -35,6 +35,17 @@
 
 ### 3. 安裝本專案的指令碼
 
+ **快速安裝（點擊即裝）**
+
+ 確認已完成上述步驟後，直接點擊以下連結，Tampermonkey 將自動彈出安裝確認頁：
+
+ | 指令碼 | 快速安裝 |
+ | --- | --- |
+ | claude.ai.user.js | [點擊安裝](https://github.com/DabitApp/tampermonkey-script/raw/refs/heads/main/scripts/claude.ai.user.js) |
+ | gemini.user.js | [點擊安裝](https://github.com/DabitApp/tampermonkey-script/raw/refs/heads/main/scripts/gemini.user.js) |
+
+ **手動安裝**
+
  1. 開啟 Tampermonkey 儀表板 → 「新增指令碼」
  2. 將 `scripts/` 目錄下對應的 `.js` 檔案整份內容貼上
  3. 儲存 (Ctrl + S)
