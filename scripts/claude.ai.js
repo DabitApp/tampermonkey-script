@@ -1,14 +1,16 @@
 // ==UserScript==
-// @name         Claude.ai → Markdown Export v2
+// @name         Claude.ai → Markdown 下載
 // @namespace    https://claude.ai/
-// @version      2.0
-// @description  匯出對話為 Markdown（下載 + 複製）
+// @version      2.1
+// @description  下載 Claude.ai 對話為 Markdown（下載 / 複製）
 // @match        https://claude.ai/*
 // @grant        none
 // ==/UserScript==
 
 (function () {
   'use strict';
+
+  const PANEL_ID = 'md-export-panel';
 
   function htmlToMd(el) {
     function walk(node) {
@@ -53,115 +55,112 @@
     return document.title?.replace(/ [-–] Claude$/, '').trim() || 'claude-export';
   }
 
-  // ★ 核心修正：精確定位 AI 的 prose 內容，排除按鈕
-    function getContentEl(turn, isUser) {
-        if (isUser) {
-            return turn.querySelector('.whitespace-pre-wrap') || turn;
-        } else {
-            return (
-                turn.querySelector('.standard-markdown')    ||
-                turn.querySelector('.progressive-markdown') ||
-                turn
-            );
-        }
-    }
-function getAiContent(turn) {
-  const sections = [...turn.querySelectorAll('.standard-markdown, .progressive-markdown')];
-  if (!sections.length) return turn;
+  function getAiContent(turn) {
+    const sections = [...turn.querySelectorAll('.standard-markdown, .progressive-markdown')];
+    if (!sections.length) return turn;
+    const wrapper = document.createElement('div');
+    sections.forEach(s => wrapper.appendChild(s.cloneNode(true)));
+    return wrapper;
+  }
 
-  // 建一個臨時容器把所有 section 合併，保持順序
-  const wrapper = document.createElement('div');
-  sections.forEach(s => {
-    const clone = s.cloneNode(true);
-    wrapper.appendChild(clone);
-  });
-  return wrapper;
-}
+  function buildMarkdown() {
+    const allTurns = [...document.querySelectorAll(
+      '[data-testid="user-message"], .font-claude-response'
+    )];
+    const turns = allTurns.filter(el =>
+      el.dataset.testid === 'user-message' ||
+      el.querySelector('.standard-markdown, .progressive-markdown')
+    );
 
-function buildMarkdown() {
-  const allTurns = [...document.querySelectorAll(
-    '[data-testid="user-message"], .font-claude-response'
-  )];
+    if (!turns.length) return null;
 
-  // 過濾掉 sidebar 的 .font-claude-response（沒有 .standard-markdown 子元素）
-  const turns = allTurns.filter(el =>
-    el.dataset.testid === 'user-message' ||
-    el.querySelector('.standard-markdown, .progressive-markdown')
-  );
+    const title = getTitle();
+    let md = '# ' + title + '\n\n';
+    md += '_下載時間：' + new Date().toLocaleString('zh-TW') + '_\n\n---\n\n';
 
-  if (!turns.length) { alert('找不到對話，請確認頁面載入完成。'); return ''; }
+    turns.forEach(turn => {
+      const isUser = turn.dataset.testid === 'user-message';
+      const role = isUser ? '**You**' : '**Claude**';
+      const contentEl = isUser
+        ? (turn.querySelector('.whitespace-pre-wrap') || turn)
+        : getAiContent(turn);
+      const text = htmlToMd(contentEl).trim();
+      if (text) md += role + '\n\n' + text + '\n\n---\n\n';
+    });
 
-  let md = '# ' + getTitle() + '\n\n';
-  md += '_匯出時間：' + new Date().toLocaleString('zh-TW') + '_\n\n---\n\n';
+    const now = new Date();
+    const dateStr = now.getFullYear()
+      + String(now.getMonth() + 1).padStart(2, '0')
+      + String(now.getDate()).padStart(2, '0');
+    const safeTitle = title.replace(/[\\/:*?"<>|]/g, '_');
+    const fileName = `[claude][${dateStr}]${safeTitle}.md`;
 
-  turns.forEach(turn => {
-    const isUser = turn.dataset.testid === 'user-message';
-    const role = isUser ? '**You**' : '**Claude**';
-    const contentEl = isUser
-    ? (turn.querySelector('.whitespace-pre-wrap') || turn)
-    : getAiContent(turn);
-    const text = htmlToMd(contentEl).trim();
-    if (text) md += role + '\n\n' + text + '\n\n---\n\n';
-  });
+    return { content: md, fileName };
+  }
 
-  return md;
-}
+  function flashButton(btn, text) {
+    const original = btn.dataset.label || btn.textContent;
+    btn.dataset.label = original;
+    btn.textContent = text;
+    setTimeout(() => { btn.textContent = original; }, 2000);
+  }
 
-  function downloadMarkdown() {
-    const md = buildMarkdown();
-    if (!md.includes('---')) { alert('找不到對話，請確認頁面載入完成。'); return; }
-    const slug = getTitle().replace(/[^\w\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g,'').slice(0,60);
-    const filename = slug + '-' + new Date().toISOString().slice(0,10) + '.md';
-    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+  function handleDownload(btn) {
+    const data = buildMarkdown();
+    if (!data) { alert('找不到對話，請確認頁面載入完成。'); return; }
+    const blob = new Blob([data.content], { type: 'text/markdown;charset=utf-8' });
+    const a = Object.assign(document.createElement('a'), {
+      href: URL.createObjectURL(blob),
+      download: data.fileName,
+    });
     a.click();
+    URL.revokeObjectURL(a.href);
+    flashButton(btn, '✓ 已下載');
   }
 
-  // ★ 新增：複製到剪貼簿
-  function copyMarkdown() {
-    const md = buildMarkdown();
-    navigator.clipboard.writeText(md).then(() => {
-      copyBtn.textContent = '✓ 已複製';
-      setTimeout(() => { copyBtn.textContent = '📋 Copy'; }, 2000);
-    });
+  function handleCopy(btn) {
+    const data = buildMarkdown();
+    if (!data) { alert('找不到對話，請確認頁面載入完成。'); return; }
+    navigator.clipboard.writeText(data.content).then(() => flashButton(btn, '✓ 已複製'));
   }
 
-  let copyBtn;
-
-  function injectButtons() {
-    if (document.getElementById('md-export-btn')) return;
-
-    const wrap = document.createElement('div');
-    Object.assign(wrap.style, {
-      position: 'fixed', bottom: '80px', right: '20px', zIndex: 9999,
-      display: 'flex', flexDirection: 'column', gap: '8px',
-    });
-
-    const style = {
-      padding: '8px 12px', borderRadius: '8px',
-      border: '1px solid rgba(128,128,128,.4)',
-      background: 'rgba(30,30,30,.85)', color: '#fff',
-      fontSize: '13px', fontWeight: '500', cursor: 'pointer',
-      backdropFilter: 'blur(6px)', boxShadow: '0 2px 8px rgba(0,0,0,.3)',
-    };
-
-    const dlBtn = document.createElement('button');
-    dlBtn.id = 'md-export-btn';
-    dlBtn.textContent = '⬇ MD';
-    Object.assign(dlBtn.style, style);
-    dlBtn.addEventListener('click', downloadMarkdown);
-
-    copyBtn = document.createElement('button');
-    copyBtn.textContent = '📋 Copy';
-    Object.assign(copyBtn.style, style);
-    copyBtn.addEventListener('click', copyMarkdown);
-
-    wrap.appendChild(copyBtn);
-    wrap.appendChild(dlBtn);
-    document.body.appendChild(wrap);
+  function createButton(text, primary, onClick) {
+    const btn = document.createElement('button');
+    btn.textContent = text;
+    btn.style.cssText = `
+      background: ${primary ? '#c2e7ff' : '#e3e3e3'};
+      color: ${primary ? '#001d35' : '#1f1f1f'};
+      border: none; padding: 8px 16px; border-radius: 8px;
+      cursor: pointer; font-weight: bold; flex: 1; font-size: 13px;
+    `;
+    btn.addEventListener('click', () => onClick(btn));
+    return btn;
   }
 
-  const observer = new MutationObserver(injectButtons);
+  function injectPanel() {
+    if (document.getElementById(PANEL_ID)) return;
+
+    const container = document.createElement('div');
+    container.id = PANEL_ID;
+    container.style.cssText = `
+      position: fixed; bottom: 80px; right: 20px; z-index: 9999;
+      background: #2e2f32; border: 1px solid #5f6368; padding: 12px;
+      border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      display: flex; flex-direction: column; gap: 8px; font-family: sans-serif;
+    `;
+
+    const btnGroup = document.createElement('div');
+    btnGroup.style.cssText = 'display: flex; gap: 8px;';
+    btnGroup.appendChild(createButton('下載', true, handleDownload));
+    btnGroup.appendChild(createButton('複製', false, handleCopy));
+
+    container.appendChild(btnGroup);
+    document.body.appendChild(container);
+  }
+
+  const observer = new MutationObserver(() => {
+    if (!document.getElementById(PANEL_ID)) injectPanel();
+  });
   observer.observe(document.body, { childList: true, subtree: true });
-  window.addEventListener('load', injectButtons);
+  window.addEventListener('load', injectPanel);
 })();

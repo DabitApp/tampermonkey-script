@@ -1,78 +1,50 @@
 // ==UserScript==
-// @name         Gemini 完整對話工具 (匯出/複製) - V3
+// @name         Gemini → Markdown 下載
 // @namespace    http://tampermonkey.net/
-// @version      3.0
-// @description  支援 [gemini][date]subject 檔名格式，移除 source，新增複製功能
+// @version      3.1
+// @description  下載 Gemini 對話為 Markdown（下載 / 複製），支援 [gemini][date]title 檔名格式
 // @author       Gemini User
 // @match        https://gemini.google.com/*
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
-    function createUI() {
-        if (document.getElementById('gemini-dump-tool')) return;
+    const PANEL_ID = 'gemini-dump-tool';
 
-        const container = document.createElement('div');
-        container.id = 'gemini-dump-tool';
-        container.style.cssText = `
-            position: fixed; bottom: 80px; right: 20px; z-index: 9999;
-            background: #2e2f32; border: 1px solid #5f6368; padding: 12px;
-            border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.4);
-            display: flex; flex-direction: column; gap: 8px; font-family: sans-serif;
-        `;
-
-        const select = document.createElement('select');
-        select.id = 'export-type';
-        select.style.cssText = "background: #1e1f20; color: white; border: 1px solid #5f6368; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 13px;";
-
-        const options = [
-            { value: 'all', text: '完整對話 (Q&A)' },
-            { value: 'q', text: '僅提問 (User)' },
-            { value: 'a', text: '僅回答 (Gemini)' }
-        ];
-
-        options.forEach(optData => {
-            const opt = document.createElement('option');
-            opt.value = optData.value;
-            opt.textContent = optData.text;
-            select.appendChild(opt);
-        });
-
-        const btnGroup = document.createElement('div');
-        btnGroup.style.display = 'flex';
-        btnGroup.style.gap = '8px';
-
-        const btnExport = createButton('匯出', '#c2e7ff', '#001d35', () => handleAction('download'));
-        const btnCopy = createButton('複製', '#e3e3e3', '#1f1f1f', () => handleAction('copy'));
-
-        btnGroup.appendChild(btnExport);
-        btnGroup.appendChild(btnCopy);
-        container.appendChild(select);
-        container.appendChild(btnGroup);
-        document.body.appendChild(container);
-    }
-
-    function createButton(text, bg, color, onClick) {
+    function createButton(text, primary, onClick) {
         const btn = document.createElement('button');
-        btn.innerText = text;
-        btn.style.cssText = `background: ${bg}; color: ${color}; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; font-size: 13px;`;
-        btn.onclick = onClick;
+        btn.textContent = text;
+        btn.style.cssText = `
+            background: ${primary ? '#c2e7ff' : '#e3e3e3'};
+            color: ${primary ? '#001d35' : '#1f1f1f'};
+            border: none; padding: 8px 16px; border-radius: 8px;
+            cursor: pointer; font-weight: bold; flex: 1; font-size: 13px;
+        `;
+        btn.addEventListener('click', () => onClick(btn));
         return btn;
     }
 
-    function getMarkdownData() {
+    function flashButton(btn, text) {
+        const original = btn.dataset.label || btn.textContent;
+        btn.dataset.label = original;
+        btn.textContent = text;
+        setTimeout(() => { btn.textContent = original; }, 2000);
+    }
+
+    function buildMarkdown() {
         const mode = document.getElementById('export-type').value;
-        const chatTitle = document.title.replace(" - Gemini", "").trim() || "Untitled";
+        const chatTitle = document.title.replace(' - Gemini', '').trim() || 'Untitled';
         const now = new Date();
-        const dateStr = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
+        const dateStr = now.getFullYear()
+            + String(now.getMonth() + 1).padStart(2, '0')
+            + String(now.getDate()).padStart(2, '0');
         const dateTimeFull = now.toLocaleString();
 
         let markdown = `---\ntitle: ${chatTitle}\ndate: ${dateTimeFull}\n---\n\n# ${chatTitle}\n\n`;
 
         const entries = document.querySelectorAll('.query-text-line, message-content');
-
         if (entries.length === 0) return null;
 
         entries.forEach((el) => {
@@ -87,37 +59,71 @@
             }
         });
 
+        const safeTitle = chatTitle.replace(/[\\/:*?"<>|]/g, '_');
         return {
             content: markdown,
-            fileName: `[gemini][${dateStr}]${chatTitle.replace(/[\\/:*?"<>|]/g, "_")}.md`
+            fileName: `[gemini][${dateStr}]${safeTitle}.md`,
         };
     }
 
-    function handleAction(type) {
-        const data = getMarkdownData();
-        if (!data) {
-            alert("找不到對話內容，請確認網頁已完全載入。");
-            return;
-        }
+    function handleDownload(btn) {
+        const data = buildMarkdown();
+        if (!data) { alert('找不到對話內容，請確認網頁已完全載入。'); return; }
+        const blob = new Blob([data.content], { type: 'text/markdown;charset=utf-8' });
+        const a = Object.assign(document.createElement('a'), {
+            href: URL.createObjectURL(blob),
+            download: data.fileName,
+        });
+        a.click();
+        URL.revokeObjectURL(a.href);
+        flashButton(btn, '✓ 已下載');
+    }
 
-        if (type === 'download') {
-            const blob = new Blob([data.content], { type: 'text/markdown' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = data.fileName;
-            a.click();
-            URL.revokeObjectURL(a.href);
-        } else if (type === 'copy') {
-            navigator.clipboard.writeText(data.content).then(() => {
-                const originalText = event.target.innerText;
-                event.target.innerText = '已複製！';
-                setTimeout(() => event.target.innerText = originalText, 2000);
-            });
-        }
+    function handleCopy(btn) {
+        const data = buildMarkdown();
+        if (!data) { alert('找不到對話內容，請確認網頁已完全載入。'); return; }
+        navigator.clipboard.writeText(data.content).then(() => flashButton(btn, '✓ 已複製'));
+    }
+
+    function createUI() {
+        if (document.getElementById(PANEL_ID)) return;
+
+        const container = document.createElement('div');
+        container.id = PANEL_ID;
+        container.style.cssText = `
+            position: fixed; bottom: 80px; right: 20px; z-index: 9999;
+            background: #2e2f32; border: 1px solid #5f6368; padding: 12px;
+            border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            display: flex; flex-direction: column; gap: 8px; font-family: sans-serif;
+        `;
+
+        const select = document.createElement('select');
+        select.id = 'export-type';
+        select.style.cssText = 'background: #1e1f20; color: white; border: 1px solid #5f6368; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 13px;';
+
+        [
+            { value: 'all', text: '完整對話 (Q&A)' },
+            { value: 'q',   text: '僅提問 (User)' },
+            { value: 'a',   text: '僅回答 (Gemini)' },
+        ].forEach(optData => {
+            const opt = document.createElement('option');
+            opt.value = optData.value;
+            opt.textContent = optData.text;
+            select.appendChild(opt);
+        });
+
+        const btnGroup = document.createElement('div');
+        btnGroup.style.cssText = 'display: flex; gap: 8px;';
+        btnGroup.appendChild(createButton('下載', true, handleDownload));
+        btnGroup.appendChild(createButton('複製', false, handleCopy));
+
+        container.appendChild(select);
+        container.appendChild(btnGroup);
+        document.body.appendChild(container);
     }
 
     const observer = new MutationObserver(() => {
-        if (!document.getElementById('gemini-dump-tool')) createUI();
+        if (!document.getElementById(PANEL_ID)) createUI();
     });
     observer.observe(document.body, { childList: true, subtree: true });
     createUI();
